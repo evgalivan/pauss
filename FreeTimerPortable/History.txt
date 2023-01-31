@@ -1,0 +1,54 @@
+Version 5.2 (January 17, 2022)
+-------------------------------
+* New timer modes "OnZero: Stop timer, Restart timer, Run as stopwatch" have been added.
+* New timer drawing mode "Swap Direction" has been added.
+* A new toolbar button has been added that launches another application instance while its own data is saved for each instance.
+* Improved: Some interface languages have been corrected.
+* Fixed: The program created an empty folder in C:\Users\<User>\AppData\Roaming
+* Some other bug fixes and improvements.
+
+Version 5.1 (April 22, 2021)
+-------------------------------
+* A new ability to specify a title for a timer has been added.
+* New command line parameter /TIME has been added. With this parameter you can set the timer time in the "hh:mm:ss" format.
+* New command line parameter /TITLE has been added. With this parameter you can set the title of the timer.
+* Changed software website to free-timer.com
+* Corrected the Greek interface language.
+* Fixed: Sometimes the installer would hang while uninstalling and updating the software.
+
+Version 5.0 (March 24, 2021)
+-------------------------------
+* Improved: The design of the application has been updated. A new dark theme has been added. The application icons have been changed.
+* Improved: When editing a timer, you can set any values for hours, minutes and seconds.
+* Improved: In the digital timer, if the duration of an event is less than an hour, only minutes and seconds are displayed, without days and hours, leaving more space for digits.
+* Improved: The ability to count up the time has been added.
+* Improved: If the timer is set for less than 5 minutes, the full circle design is used.
+* Improved: When the "Always on top" option is enabled, the caption of the main window is reduced and the program icon is removed from the taskbar.
+* A new "Open Online Timer" button has been added.
+* New: Translations of the user interface into 5 languages: Hindi, Norwegian Bokmål, Persian, Kurdish and Estonian.
+* New sounds have been added, some sounds have been renamed.
+* Improved: Translation of sounds into other languages has been added.
+* Improved user interface translation in some languages (especially Asian languages).
+* Improved: The work of the program on High DPI screens has been improved and fixed.
+* Improved: If for some reason the sound could not play, the system beep starts playing.
+* Improved: In Windows 7 and above, when playing the sound of the alert, all sounds are muted and music playback is paused, if the "Turn on the volume" option is checked.
+* Changed: The sound of the metronome has been changed. You can change the sound of the metronome by changing the Metronome.wav file.
+* Fixed: The timer was inaccurate.
+* Fixed issue with incorrect detection of system date and time format.
+* Lots of other fixes and improvements.
+
+Version 4.0 (January 14, 2016)
+-------------------------------
+* Free Timer now has full Unicode support.
+* New application icon.
+* New: The program shows a stop button and brings the main window to the foreground when the alarm triggers.
+* New command line parameter /START has been added. This parameter starts the timer.
+* New: 6 alarm sounds have been added.
+* New: Translations of the UI into Greek and Indonesian languages.
+* Improved Windows 10 Compatibility.
+* Improved DPI Scaling support.
+* Some other fixes and improvements.
+
+Version 2.0 (November 7, 2013)
+-------------------------------
+* First official release.
