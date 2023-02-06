@@ -169,8 +169,8 @@ def measurement():
 
             # Выбираю измерение пробы
             Controlini[Index_POS] = 'POS=0\n' # 1 - образец сравнения, 0 - проба
-            # Устанавливаю время гоности СС в 36000
-            Controlini[Index_ComparisonSpectrumPeriod] = 'ComparisonSpectrumPeriod=36000\n' # Время, в течение которого изменения спектра сравнения не критичны для точности анализа, сек
+            # Устанавливаю время гоности СС в 7200 (2 часа)
+            Controlini[Index_ComparisonSpectrumPeriod] = 'ComparisonSpectrumPeriod=7200\n' # Время, в течение которого изменения спектра сравнения не критичны для точности анализа, сек
             # Вношу изменения в файл
             write_Controlini(Controlini)
 
@@ -226,15 +226,20 @@ def measurement():
             print_time()
             print('Ожидание спектра сравнения')
 
-            # Даю команду остановка
-            Controlini[Index_Command] = 'Command=2\n' # 1 - запуск измерения, 2 - остановка измерения, 3 - выключение ПК, 4 - выключение GASpec
-            # Выбираю измерение образца сравнения
-            Controlini[Index_POS] = 'POS=1\n' # 1 - образец сравнения, 0 - проба
-            # Устанавливаю время гоности СС в 0
-            Controlini[Index_ComparisonSpectrumPeriod] = 'ComparisonSpectrumPeriod=0\n' # Время, в течение которого изменения спектра сравнения не критичны для точности анализа, сек
-            # Вношу изменения в файл
-            write_Controlini(Controlini)
-
+            # Жду введение команды оператором
+            print('Загрузите в кювету образец сравнения и введите команду (без ковычек): "измерить пос"', end=' ')
+            s = input()
+            if s == 'измерить пос' or s == 'Измерить пос' or s == 'Измерить ПОС' or s == 'Измерить Пос' or s == 'ИЗМЕРИТЬ ПОС' :
+                # Даю команду остановка
+                Controlini[Index_Command] = 'Command=2\n' # 1 - запуск измерения, 2 - остановка измерения, 3 - выключение ПК, 4 - выключение GASpec
+                # Выбираю измерение образца сравнения
+                Controlini[Index_POS] = 'POS=1\n' # 1 - образец сравнения, 0 - проба
+                # Устанавливаю время гоности СС в 0
+                Controlini[Index_ComparisonSpectrumPeriod] = 'ComparisonSpectrumPeriod=0\n' # Время, в течение которого изменения спектра сравнения не критичны для точности анализа, сек
+                # Вношу изменения в файл
+                write_Controlini(Controlini)
+            else :
+                print('Команда на измерение пос введена не верна.\nПроверьте, что у вас включен русский язык.')
         elif status == status_warm: # если прогрев, то выдаю статус
             print_time()
             print('Идет прогрев')
@@ -280,21 +285,13 @@ def end_of_measurement(Controlini):
 # Шаг 7. Задать вопрос оператору о завершении измерения
 # Шаг 8. Скопировать последовательность файлов control.ini для завершения работы программы GASpec
 # Шаг 1. Отобразить преветствие в терминал.
-print('Привет, тебя приветсвует программа ПАУСС версия 2.2, которая поможет тебе с GASpec.')
+print('Привет, тебя приветсвует программа ПАУСС версия 2.3 бэта, которая поможет тебе с GASpec.')
 print('Теперь я автоматическая ^-^')
 print('***************************************************************************************************')
 # Шаг 2. Скопировать файл GASpec.ini, control.ini с нужными конфигурациями для старта работы GASpec
 
 GASpecini = read_GASpecini()
-Controlini = read_Controlini()
-count = len(Controlini)
-
-#дописываю в конец списка Controlini несколько пустых элементов, если их еще не было
-if count < (Index_ReportCreateInterval + 1):
-    while (Index_ReportCreateInterval + 1) - count > 0:
-        Controlini.append('\n')
-        count += 1
-
+Controlini = ['[commands]\n', '', '', '[parameters]\n', '', '', '', '', '']
 
 start_config(GASpecini, Controlini)
 
