@@ -23,8 +23,6 @@ from time import sleep
 import subprocess
 import datetime
 
-flag_ss = 0 # флаг для проверки был ли снят спектр сравнения
-
 Path_GASpec_ini = 'C:\Infraspek\FSpec\GASpec\GASpec.ini'
 Path_Control_ini = 'C:\Infraspek\FSpec\GASpec\Control.ini'
 Path_Status_ini = 'C:\Infraspek\FSpec\GASpec\Status.ini'
@@ -36,6 +34,7 @@ Index_continue_sampling_mode = 11
 Index_continue_sampling_type = 14
 Index_timeout_continue_sampling = 17
 Index_timeout_pos = 26
+Index_inverse_opto = 34
 Index_vision_spectrs = 36
 
 # именование номеров строк в соотвествии с содержением внутри Control.ini
@@ -112,7 +111,7 @@ def print_time():
     now = datetime.datetime.now()
     print(now.strftime("%d-%m-%Y %H:%M:%S"), end = ': ')
 
-def start_config(GASpecini, Controlini):
+def start_config_GASpec(GASpecini):
     # Редактирование файла GASpec.ini
     # Устанавливаю Режим управления из файлов ini
     GASpecini[Index_control_mode] = 'Режим управления=1\n' # 0 - оператор, 1 - ini-файл
@@ -129,27 +128,38 @@ def start_config(GASpecini, Controlini):
     # Вношу изменения в файл
     write_GASpecini(GASpecini)
 
+def reset_config_GASpec(GASpecini):
+    # Редактирование файла GASpec.ini
+    # Устанавливаю Режим управления из файлов ini
+    GASpecini[Index_control_mode] = 'Режим управления=0\n' # 0 - оператор, 1 - ini-файл
+    # Устанавливаю Режим управления из файлов ini
+    GASpecini[Index_inverse_opto] = 'Инверсия оптопары=1\n' # 0 - оператор, 1 - ini-файл
+    # Вношу изменения в файл
+    write_GASpecini(GASpecini)
+
+def start_congig_Control(Controlini):
     # Редактирование файла config.ini
     # Даю команду остановка измерения
-    Controlini[Index_Command] = 'Command=1\n' # 1 - запуск измерения, 2 - остановка измерения, 3 - выключение ПК, 4 - выключение GASpec
+    Controlini[Index_Command] = 'Command=2\n' # 1 - запуск измерения, 2 - остановка измерения, 3 - выключение ПК, 4 - выключение GASpec
     # Выбираю измерение образца сравнения
-    Controlini[Index_POS] = 'POS=1\n' # 1 - образец сравнения, 0 - проба
+    Controlini[Index_POS] = 'POS=0\n' # 1 - образец сравнения, 0 - проба
     # Устанавливаю время гоности СС в 0
-    Controlini[Index_ComparisonSpectrumPeriod] = 'ComparisonSpectrumPeriod=0\n' # Время, в течение которого изменения спектра сравнения не критичны для точности анализа, сек
+    Controlini[Index_ComparisonSpectrumPeriod] = 'ComparisonSpectrumPeriod=7200\n' # Время, в течение которого изменения спектра сравнения не критичны для точности анализа, сек
     # Промежуток времени между началом смежных измерений 60 секунд
     Controlini[Index_MeasurementFrequency] = 'MeasurementFrequency=0\n' # Промежуток времени между началом смежных измерений, сек
     # Время для обновления пробы 5 сек
     Controlini[Index_PumpingDuration] = 'PumpingDuration=0\n' # Время, необходимое для обновления пробы, сек
-    # Время прогрева 10 мин (600 сек)
-    Controlini[Index_WarmTime] = 'WarmTime=10\n' # Время, необходимое для прогрева спектрометра, сек
+    # Время прогрева 0 сек (0 мин)
+    Controlini[Index_WarmTime] = 'WarmTime=0\n' # Время, необходимое для прогрева спектрометра, сек
     # Интервал создания отчетов через 60 сек
     Controlini[Index_ReportCreateInterval] = 'ReportCreateInterval=60\n' # Интервал создания отчетов, минимум 60 сек, сек
     # Вношу изменения в файл
     write_Controlini(Controlini)
 
-def measurement():
+def measurement(flag):
     count_none_status = 0 # завожу счетчик для принудительного выхода
-    flag_pos = 0 # flag_pos для измерения спектра сравнения
+    Flag_pos = flag # флаг ПОС: 0 - спектр сравнения есть, 1 - спектр сравнения измеряется
+    odd = True # для ошибки GASpec
     while True:
         status = get_status()
         Controlini = read_Controlini()
@@ -167,12 +177,15 @@ def measurement():
             print_time()
             print('Идет измерение')
 
-            # Выбираю измерение пробы
-            Controlini[Index_POS] = 'POS=0\n' # 1 - образец сравнения, 0 - проба
-            # Устанавливаю время гоности СС в 7200 (2 часа)
-            Controlini[Index_ComparisonSpectrumPeriod] = 'ComparisonSpectrumPeriod=7200\n' # Время, в течение которого изменения спектра сравнения не критичны для точности анализа, сек
-            # Вношу изменения в файл
-            write_Controlini(Controlini)
+            if Flag_pos == 1:
+                # Выбираю измерение пробы
+                Controlini[Index_POS] = 'POS=0\n' # 1 - образец сравнения, 0 - проба
+                # Устанавливаю время гоности СС в 7200 (2 часа)
+                Controlini[Index_ComparisonSpectrumPeriod] = 'ComparisonSpectrumPeriod=7200\n' # Время, в течение которого изменения спектра сравнения не критичны для точности анализа, сек
+                # Вношу изменения в файл
+                write_Controlini(Controlini)
+
+            Flag_pos = 0
 
         elif status == status_error_1 or status == status_error_2: # если ошибка, то выясняю, что делать
             error = get_error()
@@ -212,31 +225,40 @@ def measurement():
             else:
                 print_time()
                 print("Ошибка программы GASpec")
-
-                # Даю команду остановка
-                Controlini[Index_Command] = 'Command=1\n' # 1 - запуск измерения, 2 - остановка измерения, 3 - выключение ПК, 4 - выключение GASpec
-                # Вношу изменения в файл
-                write_Controlini(Controlini)
+                if odd == True:
+                    # Даю команду остановка
+                    Controlini[Index_Command] = 'Command=1\n' # 1 - запуск измерения, 2 - остановка измерения, 3 - выключение ПК, 4 - выключение GASpec
+                    # Вношу изменения в файл
+                    write_Controlini(Controlini)
+                    odd = False
+                else:
+                    # Даю команду остановка
+                    Controlini[Index_Command] = 'Command=2\n' # 1 - запуск измерения, 2 - остановка измерения, 3 - выключение ПК, 4 - выключение GASpec
+                    # Вношу изменения в файл
+                    write_Controlini(Controlini)
+                    odd = True
+                sleep(3)
 
         elif status == status_meas_pos: # если измерение спектра сравнения, то выдаю статус
             print_time()
             print('Идет измерение спектра сравнения')
 
-            flag_pos = 0
-
         elif status == status_wait_pos: # если ожидание спектра сравнения, то выставляю его измерение
             print_time()
             print('Ожидание спектра сравнения')
 
-            if flag_pos == 0:
+            if Flag_pos == 0:
+
+                # Выбираю измерение образца сравнения
+                Controlini[Index_Command] = 'Command=2\n' # 1 - образец сравнения, 0 - проба
+                # Вношу изменения в файл
+                write_Controlini(Controlini)
 
                 # Жду введение команды оператором
                 print('Загрузите в кювету образец сравнения и введите команду (без ковычек) "измерить пос":', end=' ')
                 s = input()
 
                 if s == 'измерить пос' or s == 'Измерить пос' or s == 'Измерить ПОС' or s == 'Измерить Пос' or s == 'ИЗМЕРИТЬ ПОС':
-                    # Даю команду остановка
-                    Controlini[Index_Command] = 'Command=2\n' # 1 - запуск измерения, 2 - остановка измерения, 3 - выключение ПК, 4 - выключение GASpec
                     # Выбираю измерение образца сравнения
                     Controlini[Index_POS] = 'POS=1\n' # 1 - образец сравнения, 0 - проба
                     # Устанавливаю время гоности СС в 0
@@ -244,7 +266,7 @@ def measurement():
                     # Вношу изменения в файл
                     write_Controlini(Controlini)
 
-                    flag_pos = 1
+                    Flag_pos = 1
 
                 else :
                     print('Команда на измерение пос введена не верна.\nПроверьте, что у вас включен русский язык.')
@@ -279,21 +301,18 @@ def end_of_measurement(Controlini):
 
 
 # Шаг 1. Отобразить преветствие в терминал.
-print('Привет, тебя приветствует программа ПАУСС версия 2.32, которая поможет тебе с GASpec.')
+print('Привет, тебя приветствует программа ПАУСС версия 2.33 бета, которая поможет тебе с GASpec.')
 print('Теперь я автоматическая ^-^')
 print('***************************************************************************************************')
-# Шаг 2. Скопировать файл GASpec.ini, control.ini с нужными конфигурациями для старта работы GASpec
-
-GASpecini = read_GASpecini()
-Controlini = ['[commands]\n', '', '', '[parameters]\n', '', '', '', '', '']
-
-start_config(GASpecini, Controlini)
-
-GASpecini = read_GASpecini()
 
 # print('Прежде, чем запускать GASpec необходимо подождать прогревания прибора. Если же прибор предварительно прогрет, то просто закрой окно с таймером.')
 # P = subprocess.Popen([Path_Timer_exe, '/START',  '/TITLE', 'Прогрев кюветы', '/TIME', '01:00:00'])
 # P.wait();
+
+Flag_pos = 0 # Flag_pos для измерения спектра сравнения
+GASpecini = read_GASpecini()
+Controlini = ['[commands]\n', '', '', '[parameters]\n', '', '', '', '', '']
+Controlini = read_Controlini()
 
 # Шаг 3. Задать вопрос оператору о начале запуска программы GASpec.
 print('д - запустить GASpec и начать измерения\nп - продолжить измерения без запуска GASpec\nн - выйти из программы ПАУСС')
@@ -303,14 +322,37 @@ s = input()
 # Шаг 4. Запуск программы GASpec (C:\Infraspek\FSpec\FSpec.exe /mod=GASpec)
 if s == 'д' or s == 'Д':
     print('Программа GASpec скоро будет запущена')
+    start_congig_Control(Controlini)
+    start_config_GASpec(GASpecini)
     subprocess.Popen(['C:\Infraspek\FSpec\FSpec.exe', '/mod=GASpec'])
+
+    while Flag_pos == 0:
+        print('Загрузите в кювету образец сравнения и введите команду (без ковычек) "измерить пос":', end=' ')
+
+        s = input()
+        if s == 'измерить пос' or s == 'Измерить пос' or s == 'Измерить ПОС' or s == 'Измерить Пос' or s == 'ИЗМЕРИТЬ ПОС':
+            # Выбираю измерение образца сравнения
+            Controlini[Index_POS] = 'POS=1\n' # 1 - образец сравнения, 0 - проба
+            # Устанавливаю время гоности СС в 0
+            Controlini[Index_ComparisonSpectrumPeriod] = 'ComparisonSpectrumPeriod=0\n' # Время, в течение которого изменения спектра сравнения не критичны для точности анализа, сек
+            # Вношу изменения в файл
+            write_Controlini(Controlini)
+
+            Flag_pos = 1
+
+        else :
+            print('Команда на измерение пос введена не верна.\nПроверьте, что у вас включен русский язык.')
+
+        sleep(1)
+
 elif s == 'п' or s == 'П':
     print('Продолжаю работать с GASpec')
 else:
+    reset_config_GASpec(GASpecini)
     exit()
 
 # Шаг 5. Скопировать последовательность файлов control.ini для измерения нулевого газа, затем для измерения пробы.
-measurement()
+measurement(Flag_pos)
 
 # Шаг 6. Завершении измерения
 print('Завершаю работу программы GASpec')
