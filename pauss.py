@@ -36,6 +36,7 @@ Index_timeout_continue_sampling = 17
 Index_timeout_pos = 26
 Index_inverse_opto = 34
 Index_vision_spectrs = 36
+Index_heght_cuvette = 44
 
 # именование номеров строк в соотвествии с содержением внутри Control.ini
 Index_Command = 1
@@ -118,13 +119,15 @@ def start_config_GASpec(GASpecini):
     # Устанавливаю Режим непрерывного измерения на непрерывное
     GASpecini[Index_continue_sampling_mode] = 'Режим непрерывного измерения=1\n' # 0 - единичное, 1 - непрерывное.
     # Устанавливаю Тип непрерывного измерения на заданный интервал
-    GASpecini[Index_continue_sampling_type] = 'Тип непрерывного измерения=1\n' # 0 - постоянно, 1 - в заданном интервале времени.
+    GASpecini[Index_continue_sampling_type] = 'Тип непрерывного измерения=0\n' # 0 - постоянно, 1 - в заданном интервале времени.
     # Устанавливаю длительность интервала на 0 минут
     GASpecini[Index_timeout_continue_sampling] = 'Длительность непрерывного измерения=0\n' # Длительность непрерывного измерения в минутах.
     # Устанавливаю таймер ожидания ПОС на 60 секунд
     GASpecini[Index_timeout_pos] = 'Таймаут ожидания пос=60\n' # Таймаут ожидания пос в секундах
     # Включаю режим отображения спектров
     GASpecini[Index_vision_spectrs] = 'Отображать спектры=1\n' # 0 - не отображать, 1 - отображать
+    # Задаем толщину (длину) кюветы
+    GASpecini[Index_heght_cuvette] = 'Толщина кюветы=4.8\n' # 0 - не отображать, 1 - отображать
     # Вношу изменения в файл
     write_GASpecini(GASpecini)
 
@@ -184,8 +187,8 @@ def measurement(flag):
                 Controlini[Index_ComparisonSpectrumPeriod] = 'ComparisonSpectrumPeriod=7200\n' # Время, в течение которого изменения спектра сравнения не критичны для точности анализа, сек
                 # Вношу изменения в файл
                 write_Controlini(Controlini)
-
-            Flag_pos = 0
+                # Снимаю флаг POS
+                Flag_pos = 0
 
         elif status == status_error_1 or status == status_error_2: # если ошибка, то выясняю, что делать
             error = get_error()
@@ -301,7 +304,7 @@ def end_of_measurement(Controlini):
 
 
 # Шаг 1. Отобразить преветствие в терминал.
-print('Привет, тебя приветствует программа ПАУСС версия 2.33 бета, которая поможет тебе с GASpec.')
+print('Привет, тебя приветствует программа ПАУСС версия 2.34, которая поможет тебе с GASpec.')
 print('Теперь я автоматическая ^-^')
 print('***************************************************************************************************')
 
@@ -309,6 +312,7 @@ print('*************************************************************************
 # P = subprocess.Popen([Path_Timer_exe, '/START',  '/TITLE', 'Прогрев кюветы', '/TIME', '01:00:00'])
 # P.wait();
 
+CheatFlag = 0
 Flag_pos = 0 # Flag_pos для измерения спектра сравнения
 GASpecini = read_GASpecini()
 Controlini = ['[commands]\n', '', '', '[parameters]\n', '', '', '', '', '']
@@ -340,13 +344,33 @@ if s == 'д' or s == 'Д':
 
             Flag_pos = 1
 
+        elif s == 'чит' or s == 'ЧИТ' or s == 'Чит':
+            print('Будь как дома, путник. Я ни в чем не откажу.')
+            Flag_pos = 1
+            CheatFlag = 1
+
         else :
             print('Команда на измерение пос введена не верна.\nПроверьте, что у вас включен русский язык.')
 
         sleep(1)
 
+    if CheatFlag == 1:
+        Flag_pos = 0
+
+    status = get_status()
+    # ждем пока стутус прибора не станет "Готов"
+    while status != status_ready:
+        status = get_status()
+        if status == status_error_1 or status == status_error_2:
+            break
+        sleep(1)
+
 elif s == 'п' or s == 'П':
     print('Продолжаю работать с GASpec')
+    status = get_status()
+    if status == status_meas_pos:
+        Flag_pos = 1
+
 else:
     reset_config_GASpec(GASpecini)
     exit()
